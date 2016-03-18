@@ -1,62 +1,66 @@
-# load the data and the colours
-d.pro.0 <- read.table("bbv_probiotic_samples.txt", header=T, row.names=1)
-# remove awkward values from the names
-rn <- gsub("_",".", rownames(d.pro.0))
-rownames(d.pro.0) <- rn
-# the first two rows and three columns of the data looks like this:
-d.pro.0[1:2,1:3]
-## B208_bv A208_n B210_bv
-## Actinobacteria:Actinomyces 1 11 8
-## Actinobacteria:Arcanobacterium 1 0 2
-# a correspondence table of taxa and colours
-col.tax <- read.table("bbv_colours.txt", header=T, row.names=1, comment.char="")
-# again, change awkward characters in the row names
-rownames(col.tax) <- gsub("_",".", rownames(col.tax))
-# replace 0 values with the count zero multiplicative method and output counts
-#
-# this function expects the samples to be in rows and OTUs to be in columns
-# so the dataset is turned sideways on input, and then back again on output
-# you need to know which orientation your data needs to be in for each tool
-d.pro <- t(cmultRepl(t(d.pro.0), method="CZM", output="counts"))
-## No. corrected values: 42
-# convert to proportions by sample (columns) using the apply function
-d.pro.prop <- apply(d.pro, 2, function(x){x/sum(x)})
-#####
-# Make a dataset where the taxon is more abundant than 0.1% in all samples
-# remove all taxa that are less than 0.1\% abundant in any sample
-d.pro.abund.unordered <- d.pro[apply(d.pro.prop, 1, min) > 0.001,]
-# add in the names again and sort by abundance
-d.names <- rownames(d.pro.abund.unordered)[
-order(apply(d.pro.abund.unordered, 1, sum), decreasing=T) ]
-# make a standard list of colours for plotting
-colours <- as.character(col.tax[d.names,])
-6
-# get the taxa in the reduced dataset by name
-d.pro.abund_unordered <- d.pro.abund.unordered[d.names,]
-# order the taxa by their diagnosis bv, n or i
-d.pro.abund <- data.frame(d.pro.abund_unordered[,grep("_bv", colnames(d.pro.abund_unordered))],
-d.pro.abund_unordered[,grep("_n", colnames(d.pro.abund_unordered))],
-d.pro.abund_unordered[,grep("_i", colnames(d.pro.abund_unordered))])
-# make our compositional dataset
-d.clr.abund <- t(apply(d.pro.abund, 2, function(x){log(x) - mean(log(x))}))
-# more name plumbing!
-colnames(d.clr.abund) <- gsub("\\w+:", "", colnames(d.clr.abund))
+library(zCompositions)
+library(randomcoloR)
 
-# Singlular value decompositon method of making a PCA (base R)
-pcx.abund <- prcomp(d.clr.abund)
-# getting info to color the samples
-conds <- data.frame(c(rep(1,length(grep("_bv", rownames(d.clr.abund)))),
-rep(2, length(grep("_n", rownames(d.clr.abund)))),
-rep(3, length(grep("_i", rownames(d.clr.abund)))) ))
+d <- read.table("data/summary_all_count.txt", header=T, row.names=1, sep="\t",quote="",comment.char="",stringsAsFactors=FALSE)
+
+d <- d[,(grepl("CL*", colnames(d)) | grepl("HLD*", colnames(d)))]
+
+# for some reason the unclassified species has a bunch of dashes instead of numbers
+d <- d[which(rownames(d)!="s__unclassified"),]
+d.rownames <- rownames(d)
+d <- apply(d,2,function(x) as.numeric(x))
+rownames(d) <- d.rownames
+
+# remove all features with zero counts for all samples
+d.sum <- apply(d,1,sum)
+
+d <- d[which(d.sum>0),]
+
+original.data <- d
+
+sample.sum <- apply(d,2,sum)
+one.percent <- sample.sum*0.01
+
+d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
+
+filter <- apply(d,1,function(x) length(which(x > one.percent)))
+d.filter <- d.adj.zero[which(filter > 0),]
+
+taxa.col <- data.frame(as.character(rownames(d)),rownames(d))
+colnames(taxa.col) <- c("taxon","color")
+taxa.col[,2] <- distinctColorPalette(length(taxa.col[,2]))
+
+d.prop <- apply(d.adj.zero,2,function(x){x/sum(x)})
+d.filter.prop <- apply(d.filter,2,function(x) {x/sum(x)})
+
+d.clr <- t(apply(d.prop,2,function(x){log(x) - mean(log(x))}))
+d.filter.clr <- t(apply(d.filter.prop,2,function(x){log(x) - mean(log(x))}))
+
+d.pcx <- prcomp(d.clr)
+d.filter.pcx <- prcomp(d.filter.clr)
+
+conds <- data.frame(c(rep("NASH",10),rep("Healthy",10)))
 colnames(conds) <- "cond"
+
 palette=palette(c(rgb(1,0,0,0.6), rgb(0,0,1,0.6), rgb(0,1,1,0.6)))
+
+pdf("biplots.pdf")
 
 layout(matrix(c(1,2),1,2, byrow=T), widths=c(6,2), heights=c(8,3))
 par(mgp=c(2,0.5,0))
 # make a covariance biplot of the data with compositions function
-coloredBiplot(pcx.abund, col="black", cex=c(0.6, 0.6), xlabs.col=conds$cond,
+coloredBiplot(d.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
-xlab=paste("PC1 ", round (sum(pcx.abund$sdev[1]^2)/mvar(d.clr.abund),3), sep=""),
-ylab=paste("PC2 ", round (sum(pcx.abund$sdev[2]^2)/mvar(d.clr.abund),3), sep=""),
+xlab=paste("PC1 ", round (sum(d.pcx$sdev[1]^2)/mvar(d.clr),3), sep=""),
+ylab=paste("PC2 ", round (sum(d.pcx$sdev[2]^2)/mvar(d.clr),3), sep=""),
 expand=0.8,var.axes=T, scale=1, main="Biplot")
-barplot(pcx.abund$sdev^2/mvar(d.clr.abund),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
+barplot(d.pcx$sdev^2/mvar(d.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
+
+coloredBiplot(d.filter.pcx, cex=c(0.6, 0.6),
+arrow.len=0.05,
+xlab=paste("PC1 ", round (sum(d.filter.pcx$sdev[1]^2)/mvar(d.filter.clr),3), sep=""),
+ylab=paste("PC2 ", round (sum(d.filter.pcx$sdev[2]^2)/mvar(d.filter.clr),3), sep=""),
+expand=0.8,var.axes=T, scale=1, main="Biplot")
+barplot(d.filter.pcx$sdev^2/mvar(d.filter.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
+
+dev.off()
