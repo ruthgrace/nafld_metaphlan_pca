@@ -1,5 +1,6 @@
 library(zCompositions)
 library(randomcoloR)
+library(compositions)
 
 d <- read.table("data/summary_all_count.txt", header=T, row.names=1, sep="\t",quote="",comment.char="",stringsAsFactors=FALSE)
 
