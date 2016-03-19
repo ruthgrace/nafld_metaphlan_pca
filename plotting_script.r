@@ -224,7 +224,7 @@ rownames(otu.tab.genus) <- otu.tab.genus$Group.1
 otu.tab.genus <- otu.tab.genus[,c(2:ncol(otu.tab.genus))]
 
 # conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
-groups <- metadata$SSvsNASH[match(rownames(otu.tab.genus),rownames(metadata))]
+groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
 originalgroups <- groups
 
 # Make healthy represented by 0, SS by 1, NASH by 2
@@ -235,10 +235,10 @@ groups[which(is.na(groups))] <- 0
 groups <- groups + 1
 
 # mark healthy samples selected for metagenomic study
-groups[which(rownames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
 
 # mark nash samples selected for metagenomic study
-groups[which(rownames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
 
 groups[which(groups == 0)] <- "Healthy Metagenomic"
 groups[which(groups == 1)] <- "Healthy"
