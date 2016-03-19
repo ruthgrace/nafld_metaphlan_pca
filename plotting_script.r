@@ -20,6 +20,9 @@ d <- d[which(d.sum>0),]
 
 original.data <- d
 
+rownames(d) <- gsub("s__","",rownames(d))
+rownames(d) <- gsub("_"," ",rownames(d))
+
 sample.sum <- apply(d,2,sum)
 one.percent <- sample.sum*0.01
 
@@ -114,7 +117,7 @@ barplot(d.filter.acomp, legend.text=F, col=as.character(taxa.filter.col[,2]), ax
 par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
-legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.4, border=NULL)
+legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.5, border=NULL)
 
 dev.off()
 
