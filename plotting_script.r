@@ -38,6 +38,10 @@ taxa.col <- data.frame(as.character(rownames(d)),rownames(d))
 colnames(taxa.col) <- c("taxon","color")
 taxa.col[,2] <- distinctColorPalette(length(taxa.col[,2]))
 
+taxa.filter.col <- data.frame(as.character(rownames(d.filter)),rownames(d.filter))
+colnames(taxa.filter.col) <- c("taxon","color")
+taxa.filter.col[,2] <- distinctColorPalette(length(taxa.filter.col[,2]))
+
 d.prop <- apply(d.adj.zero,2,function(x){x/sum(x)})
 d.filter.prop <- apply(d.filter,2,function(x) {x/sum(x)})
 
@@ -99,6 +103,15 @@ par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
 legend(x="center", legend=d.names, col=as.character(taxa.col[,2]), lwd=5, cex=.6, border=NULL)
+
+# plot the dendrogram
+plot(d.filter.hc, cex=0.6)
+# plot the barplot below
+barplot(d.filter.acomp, legend.text=F, col=as.character(taxa.filter.col[,2]), axisnames=F, border=NA, xpd=T)
+par(mar=c(0,1,1,1)+0.1)
+# and the legend
+plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
+legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.6, border=NULL)
 
 dev.off()
 
