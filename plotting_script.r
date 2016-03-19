@@ -28,7 +28,7 @@ d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
 filter <- apply(d,1,function(x) length(which(x > one.percent)))
 d.filter <- d.adj.zero[which(filter > 0),]
 
-d.filter.counts <- d[which(filter>0)]
+d.filter.counts <- d[which(filter>0),]
 
 d.adj.zero <- d.adj.zero[order(apply(d.adj.zero,1,sum),decreasing=TRUE),]
 d.filter <- d.filter[order(apply(d.filter,1,sum),decreasing=TRUE),]
@@ -74,7 +74,7 @@ coloredBiplot(d.filter.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
 xlab=paste("PC1 ", round (sum(d.filter.pcx$sdev[1]^2)/mvar(d.filter.clr),3), sep=""),
 ylab=paste("PC2 ", round (sum(d.filter.pcx$sdev[2]^2)/mvar(d.filter.clr),3), sep=""),
-expand=0.8,var.axes=T, scale=1, main="Biplot, 1% OTU filter")
+expand=0.8,var.axes=T, scale=1, main="Biplot")
 barplot(d.filter.pcx$sdev^2/mvar(d.filter.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
 dev.off()
