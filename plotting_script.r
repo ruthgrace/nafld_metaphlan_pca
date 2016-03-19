@@ -68,7 +68,7 @@ coloredBiplot(d.filter.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
 xlab=paste("PC1 ", round (sum(d.filter.pcx$sdev[1]^2)/mvar(d.filter.clr),3), sep=""),
 ylab=paste("PC2 ", round (sum(d.filter.pcx$sdev[2]^2)/mvar(d.filter.clr),3), sep=""),
-expand=0.8,var.axes=T, scale=1, main="Biplot")
+expand=0.8,var.axes=T, scale=1, main="Biplot, 1% OTU filter")
 barplot(d.filter.pcx$sdev^2/mvar(d.filter.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
 dev.off()
