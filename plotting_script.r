@@ -70,6 +70,7 @@ coloredBiplot(d.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
 xlab=paste("PC1 ", round (sum(d.pcx$sdev[1]^2)/mvar(d.clr),3), sep=""),
 ylab=paste("PC2 ", round (sum(d.pcx$sdev[2]^2)/mvar(d.clr),3), sep=""),
+xlabs.col=c(rep("red",10),rep("black",10)),
 expand=0.8,var.axes=T, scale=1, main="Biplot")
 barplot(d.pcx$sdev^2/mvar(d.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
@@ -77,6 +78,7 @@ coloredBiplot(d.filter.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
 xlab=paste("PC1 ", round (sum(d.filter.pcx$sdev[1]^2)/mvar(d.filter.clr),3), sep=""),
 ylab=paste("PC2 ", round (sum(d.filter.pcx$sdev[2]^2)/mvar(d.filter.clr),3), sep=""),
+xlabs.col=c(rep("red",10),rep("black",10)),
 expand=0.8,var.axes=T, scale=1, main="Biplot")
 barplot(d.filter.pcx$sdev^2/mvar(d.filter.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
@@ -176,3 +178,66 @@ cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
 abline(h=0.05, lty=2)
 
 dev.off()
+
+# COMPARE EFFECT SIZE WITH 16S
+
+otu.tab <- read.table("../exponentUnifrac/data/nash_data/summed_data_gg.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
+
+#sort taxa from most to least abundant
+taxaOrder <- rev(order(apply(otu.tab,2,sum)))
+otu.tab <- otu.tab[,taxaOrder]
+
+# read metadata
+MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
+metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
+rownames(metadata) <- gsub("a$","",rownames(metadata))
+
+metagenomic_samples <- c("CL-119", "CL-139-6mo-2", "CL-141-BL-R2", "CL-144-2", "CL-160", "CL-165", "CL-166-BL", "CL-169-BL", "CL-173-2", "CL-177", "HLD-100", "HLD-102", "HLD-111-2", "HLD-112", "HLD-23", "HLD-28", "HLD-47", "HLD-72-2", "HLD-80", "HLD-85")
+
+## sanity check to make sure all your counts have metadata
+# which(!(colnames(otu.tab) %in% rownames(metadata)))
+
+otu.tab <- t(otu.tab)
+
+# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
+groups <- metadata$SSvsNASH[match(rownames(otu.tab),rownames(metadata))]
+originalgroups <- groups
+
+# Make healthy represented by 0, SS by 1, NASH by 2
+groups <- groups + 1;
+groups[which(is.na(groups))] <- 0
+
+# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
+groups <- groups + 1
+
+# mark healthy samples selected for metagenomic study
+groups[which(rownames(otu.tab) %in% metagenomic_samples & groups == 1)] <- 0
+
+# mark nash samples selected for metagenomic study
+groups[which(rownames(otu.tab) %in% metagenomic_samples & groups == 3)] <- 4
+
+groups[which(groups == 0)] <- "Healthy Metagenomic"
+groups[which(groups == 1)] <- "Healthy"
+groups[which(groups == 2)] <- "SS"
+groups[which(groups == 3)] <- "NASH"
+groups[which(groups == 4)] <- "NASH Metagenomic"
+
+groups <- as.factor(groups)
+
+h.metnash <- t(otu.tab)
+h.metnash.cond <- groups
+h.metnash <- h.metnash[,which(h.metnash.cond == "Healthy Metagenomic" | h.metnash.cond == "NASH Metagenomic")]
+h.metnash.cond <- h.metnash.cond[which(h.metnash.cond == "Healthy Metagenomic" | h.metnash.cond == "NASH Metagenomic")]
+
+h.metnash.aldex <- aldex(data.frame(h.metnash),as.character(h.metnash.cond))
+
+mycolor <- c(col2rgb("turquoise4"))
+red <- mycolor[1]
+green <- mycolor[2]
+blue <- mycolor[3]
+mycolor <- rgb(red/255, green/255, blue/255, 0.3)
+
+plot(h.nash.aldex$effect, h.metnash.aldex$effect, pch=19,col=mycolor, main="Effect sizes of healthy vs NASH compared to healthy vs extreme NASH",xlab="Healthy vs. NASH",ylab="Healthy vs. extreme NASH")
+cor(h.nash.aldex$effect, y = h.metnash.aldex$effect, use = "everything", method = "spearman")
+
+##NEED A WAY OF KNOWING WHICH TAXA ARE WHICH FOR 16S data
