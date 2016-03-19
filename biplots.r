@@ -1,6 +1,7 @@
 library(zCompositions)
 library(randomcoloR)
 library(compositions)
+library(ALDEx2)
 
 d <- read.table("data/summary_all_count.txt", header=T, row.names=1, sep="\t",quote="",comment.char="",stringsAsFactors=FALSE)
 
@@ -101,45 +102,12 @@ legend(x="center", legend=d.names, col=as.character(taxa.col[,2]), lwd=5, cex=.6
 
 dev.off()
 
-
-
-
-
-
-
-
-
-
-
-
-
-# generate the distance matrix
-dd <- dist(d.clr.abund, method="euclidian")
-# cluster the data
-hc <- hclust(dd, method="ward.D2")
-# now re-order the data to plot the barplot in the same order
-d.order <- d.pro.abund[,hc$order]
-d.order.acomp <- acomp(t(d.order))
-
-layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(6,2), height=c(4,4))
-par(mar=c(2,1,1,1)+0.1)
-# plot the dendrogram
-plot(hc, cex=0.6)
-# plot the barplot below
-barplot(d.order.acomp, legend.text=F, col=colours, axisnames=F, border=NA, xpd=T)
-par(mar=c(0,1,1,1)+0.1)
-# and the legend
-plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
-legend(x="center", legend=d.names, col=colours, lwd=5, cex=.6, border=NULL)
-
-
-
 # generate the dataset by making a data frame of
-d.B <- colnames(d.pro.0)[grep("B", colnames(d.pro.0))] # Before samples
-d.A <- colnames(d.pro.0)[grep("A", colnames(d.pro.0))] # After samples
-d.aldex <- data.frame(d.pro.0[,d.B], d.pro.0[,d.A]) # make a data frame
+d.h <- colnames(d)[grep("HLD*", colnames(d))] # Before samples
+d.n <- colnames(d)[grep("CL*", colnames(d))] # After samples
+d.aldex <- data.frame(d[,d.h], d[,d.n]) # make a data frame
 # make the vector of set membership in the same order as
-conds.aldex <- c(rep("Be", 31), rep("Af", 31))
+conds.aldex <- c(rep("Healthy", 10), rep("NASH", 10))
 # generate 128 Dirichlet Monte-Carlo replicates
 x <- aldex.clr(d.aldex, mc.samples=128, verbose=FALSE)
 ## [1] "operating in serial mode"
@@ -151,23 +119,7 @@ x.e <- aldex.effect(x, conds.aldex, verbose=FALSE)
 # save it all in a data frame
 x.all <- data.frame(x.e,x.t)
 
-x.p <- aldex.clr(d.pro.abund, mc.samples=128)
-## [1] "operating in serial mode"
-min.sma.df <- aldex.phi(x.p)
-min.sma.df$row <- gsub(".+:", "", min.sma.df$row)
-min.sma.df$col <- gsub(".+:", "", min.sma.df$col)
-phi.cutoff <- 0.5
-min.sma.lo.phi <- subset(min.sma.df, phi < phi.cutoff)
-## generate a graphical object
-g <- graph.data.frame(min.sma.lo.phi, directed=FALSE)
-## # get the clusters from the graph object
-g.clust <- clusters(g)
-### # data frame containing the names and group memberships of each cluster
-g.df <- data.frame(Systematic.name=V(g)$name, cluster=g.clust$membership,
-cluster.size=g.clust$csize[g.clust$membership])
-# get clusters of a given size here all clusters are captured
-big <- g.df[which(g.df$cluster.size >= 1),]
-colnames(big) <- colnames(g.df)
+pdf("aldex_plots.pdf")
 
 layout(matrix(c(1,2,3,1,2,3),2,3, byrow=T), widths=c(5,2,2), height=c(4,4))
 par(mar=c(5,4,4,1)+0.1)
@@ -178,3 +130,5 @@ abline(h=0.05, lty=2)
 plot(x.all$diff.btw, x.all$wi.eBH, log="y", pch=19, main="Volcano",
 cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
 abline(h=0.05, lty=2)
+
+dev.off()
