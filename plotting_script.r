@@ -93,7 +93,7 @@ d.filter.acomp <- acomp(t(d.filter.order))
 
 pdf("dendogram_barplot.pdf")
 
-layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(6,2), height=c(4,4))
+layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(8,10), height=c(4,4))
 par(mar=c(2,1,1,1)+0.1)
 # plot the dendrogram
 plot(d.hc, cex=0.6)
@@ -102,8 +102,9 @@ barplot(d.acomp, legend.text=F, col=as.character(taxa.col[,2]), axisnames=F, bor
 par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
-legend(x="center", legend=d.names, col=as.character(taxa.col[,2]), lwd=5, cex=.6, border=NULL)
+legend(x="center", legend=d.names, col=as.character(taxa.col[,2]), lwd=5, cex=.3, border=NULL,ncol=3)
 
+layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(6,4), height=c(4,4))
 # plot the dendrogram
 plot(d.filter.hc, cex=0.6)
 # plot the barplot below
@@ -111,7 +112,7 @@ barplot(d.filter.acomp, legend.text=F, col=as.character(taxa.filter.col[,2]), ax
 par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
-legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.6, border=NULL)
+legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.4, border=NULL)
 
 dev.off()
 
