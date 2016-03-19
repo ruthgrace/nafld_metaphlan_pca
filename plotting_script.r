@@ -28,6 +28,8 @@ d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
 filter <- apply(d,1,function(x) length(which(x > one.percent)))
 d.filter <- d.adj.zero[which(filter > 0),]
 
+d.filter.counts <- d[which(filter>0)]
+
 d.adj.zero <- d.adj.zero[order(apply(d.adj.zero,1,sum),decreasing=TRUE),]
 d.filter <- d.filter[order(apply(d.filter,1,sum),decreasing=TRUE),]
 
@@ -133,6 +135,23 @@ x.e <- aldex.effect(x, conds.aldex, verbose=FALSE)
 # save it all in a data frame
 x.all <- data.frame(x.e,x.t)
 
+# generate the dataset by making a data frame of
+d.filter.h <- colnames(d.filter.counts)[grep("HLD*", colnames(d.filter.counts))] # Before samples
+d.filter.n <- colnames(d.filter.counts)[grep("CL*", colnames(d.filter.counts))] # After samples
+d.filter.aldex <- data.frame(d.filter.counts[,d.filter.h], d.filter.counts[,d.filter.n]) # make a data frame
+# make the vector of set membership in the same order as
+conds.aldex <- c(rep("Healthy", 10), rep("NASH", 10))
+# generate 128 Dirichlet Monte-Carlo replicates
+x.filter <- aldex.clr(d.filter.aldex, mc.samples=128, verbose=FALSE)
+## [1] "operating in serial mode"
+# calculate p values for each replicate and report the mean
+x.filter.t <- aldex.ttest(x.filter, conds.aldex)
+# calculate mean effect sizes
+x.filter.e <- aldex.effect(x.filter, conds.aldex, verbose=FALSE)
+## [1] "operating in serial mode"
+# save it all in a data frame
+x.filter.all <- data.frame(x.filter.e,x.filter.t)
+
 pdf("aldex_plots.pdf")
 
 layout(matrix(c(1,2,3,1,2,3),2,3, byrow=T), widths=c(5,2,2), height=c(4,4))
@@ -142,6 +161,14 @@ plot(x.all$effect, x.all$wi.eBH, log="y", pch=19, main="Effect",
 cex=0.5, xlab="Effect size", ylab="Expected Benjamini-Hochberg P")
 abline(h=0.05, lty=2)
 plot(x.all$diff.btw, x.all$wi.eBH, log="y", pch=19, main="Volcano",
+cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+
+aldex.plot(x.filter.all, test="wilcox", cutoff=0.05, all.cex=0.8, called.cex=1)
+plot(x.filter.all$effect, x.filter.all$wi.eBH, log="y", pch=19, main="Effect",
+cex=0.5, xlab="Effect size", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+plot(x.filter.all$diff.btw, x.filter.all$wi.eBH, log="y", pch=19, main="Volcano",
 cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
 abline(h=0.05, lty=2)
 
