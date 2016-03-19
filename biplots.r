@@ -27,6 +27,12 @@ d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
 filter <- apply(d,1,function(x) length(which(x > one.percent)))
 d.filter <- d.adj.zero[which(filter > 0),]
 
+d.adj.zero <- d.adj.zero[order(apply(d.adj.zero,1,sum),decreasing=TRUE),]
+d.filter <- d.filter[order(apply(d.filter,1,sum),decreasing=TRUE),]
+
+d.names <- rownames(d.adj.zero)
+d.filter.names <- rownames(d.filter)
+
 taxa.col <- data.frame(as.character(rownames(d)),rownames(d))
 colnames(taxa.col) <- c("taxon","color")
 taxa.col[,2] <- distinctColorPalette(length(taxa.col[,2]))
@@ -76,10 +82,24 @@ d.filter.hc <- hclust(d.filter.dist, method="ward.D2")
 # now re-order the data to plot the barplot in the same order
 d.order <- d.adj.zero[,d.hc$order]
 d.filter.order <- d.filter[,d.filter.hc$order]
-d.order.acomp <- acomp(t(d.order))
 
+d.acomp <- acomp(t(d.order))
+d.filter.acomp <- acomp(t(d.filter.order))
 
+pdf("dendogram_barplot.pdf")
 
+layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(6,2), height=c(4,4))
+par(mar=c(2,1,1,1)+0.1)
+# plot the dendrogram
+plot(d.hc, cex=0.6)
+# plot the barplot below
+barplot(d.acomp, legend.text=F, col=as.character(taxa.col[,2]), axisnames=F, border=NA, xpd=T)
+par(mar=c(0,1,1,1)+0.1)
+# and the legend
+plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
+legend(x="center", legend=d.names, col=as.character(taxa.col[,2]), lwd=5, cex=.6, border=NULL)
+
+dev.off()
 
 
 
@@ -111,6 +131,8 @@ par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
 legend(x="center", legend=d.names, col=colours, lwd=5, cex=.6, border=NULL)
+
+
 
 # generate the dataset by making a data frame of
 d.B <- colnames(d.pro.0)[grep("B", colnames(d.pro.0))] # Before samples
