@@ -189,6 +189,7 @@ genus <- str_extract(species,"^[A-Za-z]*")
 d.genus <- aggregate(d,list(genus),sum)
 rownames(d.genus) <- d.genus$Group.1
 d.genus <- d.genus[,c(2:ncol(d.genus))]
+colnames(d.genus) <- str_extract(colnames(d.genus),"^[A-Z]*_[0-9]*")
 
 # get genus level for 16S
 otu.tab <- read.table("data/td_OTU_tag_mapped_lineage_working.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
@@ -254,6 +255,19 @@ h.metnash <- h.metnash[,which(h.metnash.cond == "Healthy Metagenomic" | h.metnas
 h.metnash.cond <- h.metnash.cond[which(h.metnash.cond == "Healthy Metagenomic" | h.metnash.cond == "NASH Metagenomic")]
 
 h.metnash.aldex <- aldex(data.frame(h.metnash),as.character(h.metnash.cond))
+
+
+d.groups <- metadata$SSvsNASH[match(colnames(d.genus),rownames(metadata))]
+d.originalgroups <- d.groups
+
+d.cond <- d.groups
+d.cond[which(is.na(d.cond))] <- "Healthy Metagenomic"
+d.cond[which(d.cond==1)] <- "NASH Metagenomic"
+d.cond <- as.factor(d.cond)
+
+h.metnash.d <- d.genus
+
+h.metnash.d.aldex <- aldex(data.frame(h.metnash.d),as.character(d.cond))
 
 mycolor <- c(col2rgb("turquoise4"))
 red <- mycolor[1]
