@@ -249,7 +249,7 @@ groups[which(groups == 4)] <- "NASH Metagenomic"
 
 groups <- as.factor(groups)
 
-h.metnash <- t(otu.tab.genus)
+h.metnash <- otu.tab.genus
 h.metnash.cond <- groups
 h.metnash <- h.metnash[,which(h.metnash.cond == "Healthy Metagenomic" | h.metnash.cond == "NASH Metagenomic")]
 h.metnash.cond <- h.metnash.cond[which(h.metnash.cond == "Healthy Metagenomic" | h.metnash.cond == "NASH Metagenomic")]
@@ -275,7 +275,14 @@ green <- mycolor[2]
 blue <- mycolor[3]
 mycolor <- rgb(red/255, green/255, blue/255, 0.3)
 
-plot(h.nash.aldex$effect, h.metnash.aldex$effect, pch=19,col=mycolor, main="Effect sizes of healthy vs NASH compared to healthy vs extreme NASH",xlab="Healthy vs. NASH",ylab="Healthy vs. extreme NASH")
-cor(h.nash.aldex$effect, y = h.metnash.aldex$effect, use = "everything", method = "spearman")
+common.genus <- rownames(h.metnash.d.aldex)[which(rownames(h.metnash.d.aldex) %in% rownames(h.metnash.aldex))]
 
-##NEED A WAY OF KNOWING WHICH TAXA ARE WHICH FOR 16S data
+otu.tab.common.effect <- h.metnash.aldex$effect[match(common.genus,rownames(h.metnash.aldex))]
+d.common.effect <- h.metnash.d.aldex$effect[match(common.genus,rownames(h.metnash.d.aldex))]
+
+pdf("metaphlan_vs_16S_effect_sizes.pdf")
+plot(otu.tab.common.effect, d.common.effect, pch=19,col=mycolor, main="Effect sizes of healthy vs extreme NASH\nfor MetaPhlAn results vs. 16S sequencing",xlab="16S rRNA gene tag sequencing",ylab="MetaPhlAn results from metagenomic sequencing")
+dev.off()
+
+cor(otu.tab.common.effect, y = d.common.effect, use = "everything", method = "spearman")
+# [1] 0.4456304
