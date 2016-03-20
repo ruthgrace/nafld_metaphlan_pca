@@ -212,39 +212,9 @@ par(mar=c(0,1,1,1)+0.1)
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
 legend(x="center", legend=d.genus.names, col=as.character(taxa.d.genus.col[,2]), lwd=5, cex=.5, border=NULL,ncol=2)
 
-#make healthy black, nash red, ss pink
-otu.tab.genus.dendo <- as.dendrogram(otu.tab.genus.hc)
-colLab <- function(n) {
-    if (is.leaf(n)) {
-        a <- attributes(n)
-        if (is.na(metadata[a$label,"SSvsNASH"])) {
-          labCol <- "black"
-        }
-        else if (metadata[a$label,"SSvsNASH"] == 0) {
-          labCol <- "pink"
-        }
-        else {
-          labCol <- "red"
-        }
-        attr(n, "nodePar") <- c(a$nodePar, lab.col = labCol)
-    }
-}
-# using dendrapply
-otu.tab.genus.dendo = dendrapply(otu.tab.genus.dendo, colLab)
-
 layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(10,6), height=c(4,4))
 # plot the dendrogram
-plot(otu.tab.genus.dendo) 
-# plot the barplot below
-barplot(otu.tab.genus.acomp, legend.text=F, col=as.character(taxa.otu.tab.genus.col[,2]), axisnames=F, border=NA, xpd=T)
-par(mar=c(0,1,1,1)+0.1)
-# and the legend
-plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
-legend(x="center", legend=otu.tab.genus.names, col=as.character(taxa.otu.tab.genus.col[,2]), lwd=5, cex=.5, border=NULL,ncol=2)
-
-layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(10,6), height=c(4,4))
-# plot the dendrogram
-plot(otu.tab.genus.hc, cex=0.5) 
+plot(otu.tab.genus.hc, cex=0.4) 
 # plot the barplot below
 barplot(otu.tab.genus.acomp, legend.text=F, col=as.character(taxa.otu.tab.genus.col[,2]), axisnames=F, border=NA, xpd=T)
 par(mar=c(0,1,1,1)+0.1)
