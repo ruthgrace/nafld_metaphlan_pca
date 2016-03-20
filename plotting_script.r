@@ -50,6 +50,10 @@ for (i in c(1:length(taxonomy))) {
   otu.genus[i] <- strsplit(otu.genus[i],c(";"))[[1]][6]
 }
 
+otu.tab.genus <- aggregate(otu.tab,list(otu.genus),sum)
+rownames(otu.tab.genus) <- otu.tab.genus$Group.1
+otu.tab.genus <- otu.tab.genus[,c(2:ncol(otu.tab.genus))]
+
 # adjust zeros
 d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
 d.genus.adj.zero <- t(cmultRepl(t(d.genus),method="CZM"))
@@ -68,7 +72,7 @@ otu.tab.genus.adj.zero <- otu.tab.genus.adj.zero[order(apply(otu.tab.genus.adj.z
 d.names <- rownames(d.adj.zero)
 d.filter.names <- rownames(d.filter)
 d.genus.names <- rownames(d.genus.adj.zero)
-otu.tab.names <- rownames(otu.tab.genus.adj.zero)
+otu.tab.genus.names <- rownames(otu.tab.genus.adj.zero)
 
 taxa.col <- data.frame(as.character(rownames(d)),rownames(d))
 colnames(taxa.col) <- c("taxon","color")
@@ -155,15 +159,25 @@ dev.off()
 # generate the distance matrix
 d.dist <- dist(d.clr, method="euclidian")
 d.filter.dist <- dist(d.filter.clr, method="euclidian")
+d.genus.dist <- dist(d.genus.clr, method="euclidian")
+otu.tab.genus.dist <- dist(otu.tab.genus.clr, method="euclidian")
+
 # cluster the data
 d.hc <- hclust(d.dist, method="ward.D2")
 d.filter.hc <- hclust(d.filter.dist, method="ward.D2")
+d.genus.hc <- hclust(d.genus.dist, method="ward.D2")
+otu.tab.genus.hc <- hclust(otu.tab.genus.dist, method="ward.D2")
+
 # now re-order the data to plot the barplot in the same order
 d.order <- d.adj.zero[,d.hc$order]
 d.filter.order <- d.filter[,d.filter.hc$order]
+d.genus.order <- d.genus.adj.zero[,d.genus.hc$order]
+otu.tab.genus.order <- otu.tab.genus.adj.zero[,otu.tab.genus.hc$order]
 
 d.acomp <- acomp(t(d.order))
 d.filter.acomp <- acomp(t(d.filter.order))
+d.genus.acomp <- acomp(t(d.genus.order))
+otu.tab.genus.acomp <- acomp(t(otu.tab.genus.order))
 
 pdf("dendogram_barplot.pdf")
 
@@ -187,6 +201,26 @@ par(mar=c(0,1,1,1)+0.1)
 # and the legend
 plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
 legend(x="center", legend=d.filter.names, col=as.character(taxa.filter.col[,2]), lwd=5, cex=.5, border=NULL)
+
+layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(8,6), height=c(4,4))
+# plot the dendrogram
+plot(d.genus.hc, cex=0.6)
+# plot the barplot below
+barplot(d.genus.acomp, legend.text=F, col=as.character(taxa.d.genus.col[,2]), axisnames=F, border=NA, xpd=T)
+par(mar=c(0,1,1,1)+0.1)
+# and the legend
+plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
+legend(x="center", legend=d.genus.names, col=as.character(taxa.d.genus.col[,2]), lwd=5, cex=.5, border=NULL,ncol=2)
+
+layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(8,6), height=c(4,4))
+# plot the dendrogram
+plot(otu.tab.genus.hc, cex=0.6)
+# plot the barplot below
+barplot(otu.tab.genus.acomp, legend.text=F, col=as.character(taxa.otu.tab.genus.col[,2]), axisnames=F, border=NA, xpd=T)
+par(mar=c(0,1,1,1)+0.1)
+# and the legend
+plot(1,2, pch = 1, lty = 1, ylim=c(-20,20), type = "n", axes = FALSE, ann = FALSE)
+legend(x="center", legend=otu.tab.genus.names, col=as.character(taxa.otu.tab.genus.col[,2]), lwd=5, cex=.5, border=NULL,ncol=2)
 
 dev.off()
 
@@ -224,6 +258,51 @@ x.filter.e <- aldex.effect(x.filter, conds.aldex, verbose=FALSE)
 # save it all in a data frame
 x.filter.all <- data.frame(x.filter.e,x.filter.t)
 
+# generate the dataset by making a data frame of
+d.genus.h <- colnames(d.genus)[grep("HLD*", colnames(d.genus))] # Before samples
+d.genus.n <- colnames(d.genus)[grep("CL*", colnames(d.genus))] # After samples
+d.genus.aldex <- data.frame(d.genus[,d.genus.h], d.genus[,d.genus.n]) # make a data frame
+# make the vector of set membership in the same order as
+conds.aldex <- c(rep("Healthy", 10), rep("NASH", 10))
+# generate 128 Dirichlet Monte-Carlo replicates
+x.genus <- aldex.clr(d.genus.aldex, mc.samples=128, verbose=FALSE)
+## [1] "operating in serial mode"
+# calculate p values for each replicate and report the mean
+x.genus.t <- aldex.ttest(x.genus, conds.aldex)
+# calculate mean effect sizes
+x.genus.e <- aldex.effect(x.genus, conds.aldex, verbose=FALSE)
+## [1] "operating in serial mode"
+# save it all in a data frame
+x.genus.all <- data.frame(x.genus.e,x.genus.t)
+
+# read metadata
+MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
+metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
+rownames(metadata) <- gsub("a$","",rownames(metadata))
+samples <- str_extract(rownames(metadata), "^[A-Z]*-[0-9]*")
+samples <- gsub("-","_",samples)
+unique.samples <- unique(samples)
+metadata <- metadata[match(unique.samples,samples),]
+rownames(metadata) <- unique.samples
+
+# generate the dataset by making a data frame of
+otu.tab.genus.h <- colnames(otu.tab.genus)[grep("HLD*", colnames(otu.tab.genus))] # Before samples
+otu.tab.genus.n <- colnames(otu.tab.genus)[grep("CL*", colnames(otu.tab.genus))] # After samples
+otu.tab.genus.aldex <- data.frame(otu.tab.genus[,otu.tab.genus.h], otu.tab.genus[,otu.tab.genus.n]) # make a data frame
+# make the vector of set membership in the same order as
+conds.aldex <- c(rep("Healthy", 10), rep("NASH", 10))
+# generate 128 Dirichlet Monte-Carlo replicates
+x.otu.tab.genus <- aldex.clr(otu.tab.genus.aldex, mc.samples=128, verbose=FALSE)
+## [1] "operating in serial mode"
+# calculate p values for each replicate and report the mean
+x.otu.tab.genus.t <- aldex.ttest(x.otu.tab.genus, conds.aldex)
+# calculate mean effect sizes
+x.otu.tab.genus.e <- aldex.effect(x.otu.tab.genus, conds.aldex, verbose=FALSE)
+## [1] "operating in serial mode"
+# save it all in a data frame
+x.otu.tab.genus.all <- data.frame(x.otu.tab.genus.e,x.otu.tab.genus.t)
+
+
 pdf("aldex_plots.pdf")
 
 layout(matrix(c(1,2,3,1,2,3),2,3, byrow=T), widths=c(5,2,2), height=c(4,4))
@@ -248,24 +327,10 @@ dev.off()
 
 # COMPARE EFFECT SIZE WITH 16S
 
-# read metadata
-MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
-metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
-rownames(metadata) <- gsub("a$","",rownames(metadata))
-samples <- str_extract(rownames(metadata), "^[A-Z]*-[0-9]*")
-samples <- gsub("-","_",samples)
-unique.samples <- unique(samples)
-metadata <- metadata[match(unique.samples,samples),]
-rownames(metadata) <- unique.samples
-
 metagenomic_samples <- c("CL_119", "CL_139", "CL_141", "CL_144", "CL_160", "CL_165", "CL_166", "CL_169", "CL_173", "CL_177", "HLD_100", "HLD_102", "HLD_111", "HLD_112", "HLD_23", "HLD_28", "HLD_47", "HLD_72", "HLD_80", "HLD_85")
 
 ## sanity check to make sure all your counts have metadata
 # which(!(colnames(otu.tab) %in% rownames(metadata)))
-
-otu.tab.genus <- aggregate(otu.tab,list(otu.genus),sum)
-rownames(otu.tab.genus) <- otu.tab.genus$Group.1
-otu.tab.genus <- otu.tab.genus[,c(2:ncol(otu.tab.genus))]
 
 # conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
 groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
