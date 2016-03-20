@@ -425,4 +425,67 @@ cor(otu.tab.common.effect, y = d.select.common.effect, use = "everything", metho
 # [1] 0.5193331
 dev.off()
 
+# see if 16S effect sizes correspond with qPCR
+x.otu.tab.genus.all <- x.otu.tab.genus.all[order(abs(x.otu.tab.genus.all$effect),decreasing=TRUE),]
+head(x.otu.tab.genus.all)
 
+# rab.all rab.win.Healthy rab.win.NASH   diff.btw diff.win
+# Adlercreutzia         3.175086      3.99640882     2.340650 -1.2016842 2.523590
+# Odoribacter          -3.277856     -0.07782502    -4.971920 -3.0712957 6.373980
+# Escherichia-Shigella  2.756946      1.81004950     3.722981  1.7656502 3.741580
+# Subdoligranulum       7.237639      7.51347381     6.921751 -0.6670286 1.681645
+# Faecalibacterium      8.628496      8.77647376     8.449255 -0.4848740 1.366769
+# Howardella           -4.864411     -3.57357161    -5.685705 -2.3342699 6.163914
+#                     diff.btw.025 diff.btw.975 diff.win.025 diff.win.975
+# Adlercreutzia           -5.256415     3.712586    0.4053187     5.447547
+# Odoribacter            -15.379227     9.001643    0.8151467    16.409252
+# Escherichia-Shigella    -5.311607    13.235725    0.5209411    12.426127
+# Subdoligranulum         -3.925335     2.493043    0.3513319     3.955797
+# Faecalibacterium        -3.114079     1.929234    0.1946130     3.316228
+# Howardella             -13.326391     9.818731    0.9930043    15.988690
+#                         effect effect.025 effect.975   overlap       we.ep
+# Adlercreutzia        -0.4835327  -5.458831   2.521393 0.3077446 0.020343489
+# Odoribacter          -0.4649340  -7.072444   3.021696 0.2764946 0.021992210
+# Escherichia-Shigella  0.3956649  -2.254910   8.163925 0.2683424 0.006706071
+# Subdoligranulum      -0.3719839  -4.507363   2.402492 0.3387644 0.055698109
+# Faecalibacterium     -0.3610408  -5.838529   2.404305 0.3179348 0.032446750
+# Howardella           -0.3532042  -4.687023   2.905916 0.3462322 0.109705221
+#                        we.eBH       wi.ep    wi.eBH
+# Adlercreutzia        0.3534599 0.021369055 0.3306036
+# Odoribacter          0.2994716 0.009201213 0.2211472
+# Escherichia-Shigella 0.2918079 0.004772191 0.2176577
+# Subdoligranulum      0.3971124 0.067241972 0.3990891
+# Faecalibacterium     0.3692215 0.046623776 0.3620974
+# Howardella           0.4603037 0.108507134 0.4397481
+
+h.metnash.aldex <- h.metnash.aldex[order(abs(h.metnash.aldex$effect),decreasing=TRUE),]
+head(h.metnash.aldex)
+
+# rab.all rab.win.Healthy.Metagenomic rab.win.NASH.Metagenomic
+# Ruminococcus     7.6816501                    8.254224               6.45055079
+# Adlercreutzia    3.0391414                    4.578077               2.32654167
+# Alistipes        2.9798894                    4.037848               2.51044936
+# Subdoligranulum  7.2174157                    7.419332               6.89971491
+# Paraprevotella  -3.3494022                   -4.737476               0.45134788
+# Sporobacter      0.5569811                    1.317570               0.08132112
+# diff.btw diff.win diff.btw.025 diff.btw.975 diff.win.025
+# Ruminococcus    -1.3305060 1.436077    -3.753465    1.5297000    0.1742363
+# Adlercreutzia   -1.7579496 2.280052    -5.265028    3.1525008    0.2578323
+# Alistipes       -1.5810377 2.630745    -5.203863    3.2883952    0.2746771
+# Subdoligranulum -0.7711102 1.174769    -3.655815    0.8264022    0.2182949
+# Paraprevotella   4.5098653 7.139519    -8.950650   16.1562824    0.9054702
+# Sporobacter     -1.7950275 3.583661   -14.269794    2.4021013    0.4350850
+# diff.win.975     effect effect.025 effect.975   overlap
+# Ruminococcus        3.077371 -0.9082133 -10.360034  1.2750943 0.1578126
+# Adlercreutzia       5.574447 -0.7285971  -7.970118  2.7028970 0.2375001
+# Alistipes           5.785567 -0.6776068  -8.399277  2.5259105 0.2296876
+# Subdoligranulum     3.257063 -0.6216454  -7.206900  0.8898567 0.2230890
+# Paraprevotella     16.621770  0.5720271  -2.058568  7.9548203 0.2750001
+# Sporobacter        13.317951 -0.5357797 -12.280273  1.2931115 0.2500001
+#   we.ep    we.eBH       wi.ep    wi.eBH
+# Ruminococcus    0.00832152 0.4587131 0.008848072 0.4150885
+# Adlercreutzia   0.05264239 0.5405332 0.060235865 0.5371605
+# Alistipes       0.06207430 0.5427525 0.050206252 0.5280711
+# Subdoligranulum 0.03060380 0.5237721 0.052333382 0.5096242
+# Paraprevotella  0.11230424 0.5885137 0.119365626 0.5934511
+# Sporobacter     0.03873904 0.5324252 0.071479326 0.5453548
