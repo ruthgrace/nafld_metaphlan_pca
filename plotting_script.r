@@ -4,6 +4,8 @@ library(compositions)
 library(ALDEx2)
 library(stringr)
 
+metagenomic_samples <- c("CL_119", "CL_139", "CL_141", "CL_144", "CL_160", "CL_165", "CL_166", "CL_169", "CL_173", "CL_177", "HLD_100", "HLD_102", "HLD_111", "HLD_112", "HLD_23", "HLD_28", "HLD_47", "HLD_72", "HLD_80", "HLD_85")
+
 # read metadata for 16S samples
 MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
 metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
@@ -14,32 +16,7 @@ unique.samples <- unique(samples)
 metadata <- metadata[match(unique.samples,samples),]
 rownames(metadata) <- unique.samples
 
-# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
-groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
-originalgroups <- groups
-
-# Make healthy represented by 0, SS by 1, NASH by 2
-groups <- groups + 1;
-groups[which(is.na(groups))] <- 0
-
-# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
-groups <- groups + 1
-
-# mark healthy samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
-
-# mark nash samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
-
-groups[which(groups == 0)] <- "Healthy Metagenomic"
-groups[which(groups == 1)] <- "Healthy"
-groups[which(groups == 2)] <- "SS"
-groups[which(groups == 3)] <- "NASH"
-groups[which(groups == 4)] <- "NASH Metagenomic"
-
-groups <- as.factor(groups)
-
-
+# get metaphlan data
 d <- read.table("data/summary_all_count.txt", header=T, row.names=1, sep="\t",quote="",comment.char="",stringsAsFactors=FALSE)
 
 d <- d[,(grepl("CL*", colnames(d)) | grepl("HLD*", colnames(d)))]
@@ -59,9 +36,6 @@ original.data <- d
 
 rownames(d) <- gsub("s__","",rownames(d))
 rownames(d) <- sub("_"," ",rownames(d))
-
-sample.sum <- apply(d,2,sum)
-one.percent <- sample.sum*0.01
 
 # get genus level for metaphlan
 species <- rownames(d)
@@ -89,6 +63,35 @@ for (i in c(1:length(taxonomy))) {
 otu.tab.genus <- aggregate(otu.tab,list(otu.genus),sum)
 rownames(otu.tab.genus) <- otu.tab.genus$Group.1
 otu.tab.genus <- otu.tab.genus[,c(2:ncol(otu.tab.genus))]
+
+# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
+groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
+originalgroups <- groups
+
+# Make healthy represented by 0, SS by 1, NASH by 2
+groups <- groups + 1;
+groups[which(is.na(groups))] <- 0
+
+# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
+groups <- groups + 1
+
+# mark healthy samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
+
+# mark nash samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
+
+groups[which(groups == 0)] <- "Healthy Metagenomic"
+groups[which(groups == 1)] <- "Healthy"
+groups[which(groups == 2)] <- "SS"
+groups[which(groups == 3)] <- "NASH"
+groups[which(groups == 4)] <- "NASH Metagenomic"
+
+groups <- as.factor(groups)
+
+
+sample.sum <- apply(d,2,sum)
+one.percent <- sample.sum*0.01
 
 # adjust zeros
 d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
@@ -374,7 +377,6 @@ dev.off()
 
 # COMPARE EFFECT SIZE WITH 16S
 
-metagenomic_samples <- c("CL_119", "CL_139", "CL_141", "CL_144", "CL_160", "CL_165", "CL_166", "CL_169", "CL_173", "CL_177", "HLD_100", "HLD_102", "HLD_111", "HLD_112", "HLD_23", "HLD_28", "HLD_47", "HLD_72", "HLD_80", "HLD_85")
 
 ## sanity check to make sure all your counts have metadata
 # which(!(colnames(otu.tab) %in% rownames(metadata)))
