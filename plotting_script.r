@@ -285,19 +285,44 @@ unique.samples <- unique(samples)
 metadata <- metadata[match(unique.samples,samples),]
 rownames(metadata) <- unique.samples
 
+# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
+groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
+originalgroups <- groups
+
+# Make healthy represented by 0, SS by 1, NASH by 2
+groups <- groups + 1;
+groups[which(is.na(groups))] <- 0
+
+# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
+groups <- groups + 1
+
+# mark healthy samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
+
+# mark nash samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
+
+groups[which(groups == 0)] <- "Healthy Metagenomic"
+groups[which(groups == 1)] <- "Healthy"
+groups[which(groups == 2)] <- "SS"
+groups[which(groups == 3)] <- "NASH"
+groups[which(groups == 4)] <- "NASH Metagenomic"
+
+groups <- as.factor(groups)
+
 # generate the dataset by making a data frame of
-otu.tab.genus.h <- colnames(otu.tab.genus)[grep("HLD*", colnames(otu.tab.genus))] # Before samples
-otu.tab.genus.n <- colnames(otu.tab.genus)[grep("CL*", colnames(otu.tab.genus))] # After samples
+otu.tab.genus.h <- colnames(otu.tab.genus)[grepl("^Healthy*",as.character(groups))] # Before samples
+otu.tab.genus.n <- colnames(otu.tab.genus)[grepl("^NASH*",as.character(groups))] # After samples
 otu.tab.genus.aldex <- data.frame(otu.tab.genus[,otu.tab.genus.h], otu.tab.genus[,otu.tab.genus.n]) # make a data frame
 # make the vector of set membership in the same order as
-conds.aldex <- c(rep("Healthy", 10), rep("NASH", 10))
+otu.tab.genus.conds.aldex <- c(rep("Healthy", length(otu.tab.genus.h)), rep("NASH", length(otu.tab.genus.n)))
 # generate 128 Dirichlet Monte-Carlo replicates
 x.otu.tab.genus <- aldex.clr(otu.tab.genus.aldex, mc.samples=128, verbose=FALSE)
 ## [1] "operating in serial mode"
 # calculate p values for each replicate and report the mean
-x.otu.tab.genus.t <- aldex.ttest(x.otu.tab.genus, conds.aldex)
+x.otu.tab.genus.t <- aldex.ttest(x.otu.tab.genus, otu.tab.genus.conds.aldex)
 # calculate mean effect sizes
-x.otu.tab.genus.e <- aldex.effect(x.otu.tab.genus, conds.aldex, verbose=FALSE)
+x.otu.tab.genus.e <- aldex.effect(x.otu.tab.genus, otu.tab.genus.conds.aldex, verbose=FALSE)
 ## [1] "operating in serial mode"
 # save it all in a data frame
 x.otu.tab.genus.all <- data.frame(x.otu.tab.genus.e,x.otu.tab.genus.t)
@@ -323,6 +348,22 @@ plot(x.filter.all$diff.btw, x.filter.all$wi.eBH, log="y", pch=19, main="Volcano"
 cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
 abline(h=0.05, lty=2)
 
+aldex.plot(x.genus.all, test="wilcox", cutoff=0.05, all.cex=0.8, called.cex=1)
+plot(x.genus.all$effect, x.genus.all$wi.eBH, log="y", pch=19, main="Effect",
+cex=0.5, xlab="Effect size", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+plot(x.genus.all$diff.btw, x.genus.all$wi.eBH, log="y", pch=19, main="Volcano",
+cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+
+aldex.plot(x.otu.tab.genus.all, test="wilcox", cutoff=0.05, all.cex=0.8, called.cex=1)
+plot(x.otu.tab.genus.all$effect, x.otu.tab.genus.all$wi.eBH, log="y", pch=19, main="Effect",
+cex=0.5, xlab="Effect size", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+plot(x.otu.tab.genus.all$diff.btw, x.otu.tab.genus.all$wi.eBH, log="y", pch=19, main="Volcano",
+cex=0.5, xlab="Difference", ylab="Expected Benjamini-Hochberg P")
+abline(h=0.05, lty=2)
+
 dev.off()
 
 # COMPARE EFFECT SIZE WITH 16S
@@ -331,31 +372,6 @@ metagenomic_samples <- c("CL_119", "CL_139", "CL_141", "CL_144", "CL_160", "CL_1
 
 ## sanity check to make sure all your counts have metadata
 # which(!(colnames(otu.tab) %in% rownames(metadata)))
-
-# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
-groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
-originalgroups <- groups
-
-# Make healthy represented by 0, SS by 1, NASH by 2
-groups <- groups + 1;
-groups[which(is.na(groups))] <- 0
-
-# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
-groups <- groups + 1
-
-# mark healthy samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
-
-# mark nash samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
-
-groups[which(groups == 0)] <- "Healthy Metagenomic"
-groups[which(groups == 1)] <- "Healthy"
-groups[which(groups == 2)] <- "SS"
-groups[which(groups == 3)] <- "NASH"
-groups[which(groups == 4)] <- "NASH Metagenomic"
-
-groups <- as.factor(groups)
 
 h.metnash <- otu.tab.genus
 h.metnash.cond <- groups
