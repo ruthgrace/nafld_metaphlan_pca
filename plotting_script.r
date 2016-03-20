@@ -4,6 +4,42 @@ library(compositions)
 library(ALDEx2)
 library(stringr)
 
+# read metadata for 16S samples
+MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
+metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
+rownames(metadata) <- gsub("a$","",rownames(metadata))
+samples <- str_extract(rownames(metadata), "^[A-Z]*-[0-9]*")
+samples <- gsub("-","_",samples)
+unique.samples <- unique(samples)
+metadata <- metadata[match(unique.samples,samples),]
+rownames(metadata) <- unique.samples
+
+# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
+groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
+originalgroups <- groups
+
+# Make healthy represented by 0, SS by 1, NASH by 2
+groups <- groups + 1;
+groups[which(is.na(groups))] <- 0
+
+# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
+groups <- groups + 1
+
+# mark healthy samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
+
+# mark nash samples selected for metagenomic study
+groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
+
+groups[which(groups == 0)] <- "Healthy Metagenomic"
+groups[which(groups == 1)] <- "Healthy"
+groups[which(groups == 2)] <- "SS"
+groups[which(groups == 3)] <- "NASH"
+groups[which(groups == 4)] <- "NASH Metagenomic"
+
+groups <- as.factor(groups)
+
+
 d <- read.table("data/summary_all_count.txt", header=T, row.names=1, sep="\t",quote="",comment.char="",stringsAsFactors=FALSE)
 
 d <- d[,(grepl("CL*", colnames(d)) | grepl("HLD*", colnames(d)))]
@@ -162,6 +198,11 @@ d.filter.dist <- dist(d.filter.clr, method="euclidian")
 d.genus.dist <- dist(d.genus.clr, method="euclidian")
 otu.tab.genus.dist <- dist(otu.tab.genus.clr, method="euclidian")
 
+# add condition onto labels of 16S hclust data
+otu.tab.conditions <- as.character(groups)
+otu.tab.conditions <- gsub(" ","_",otu.tab.conditions)
+attributes(otu.tab.genus.dist)$Labels <- paste(otu.tab.conditions, attributes(otu.tab.genus.dist)$Labels, sep="_")
+
 # cluster the data
 d.hc <- hclust(d.dist, method="ward.D2")
 d.filter.hc <- hclust(d.filter.dist, method="ward.D2")
@@ -214,7 +255,7 @@ legend(x="center", legend=d.genus.names, col=as.character(taxa.d.genus.col[,2]),
 
 layout(matrix(c(1,3,2,3),2,2, byrow=T), widths=c(10,6), height=c(4,4))
 # plot the dendrogram
-plot(otu.tab.genus.hc, cex=0.4) 
+plot(otu.tab.genus.hc, cex=0.4, hang=-1)
 # plot the barplot below
 barplot(otu.tab.genus.acomp, legend.text=F, col=as.character(taxa.otu.tab.genus.col[,2]), axisnames=F, border=NA, xpd=T)
 par(mar=c(0,1,1,1)+0.1)
@@ -274,41 +315,6 @@ x.genus.e <- aldex.effect(x.genus, conds.aldex, verbose=FALSE)
 ## [1] "operating in serial mode"
 # save it all in a data frame
 x.genus.all <- data.frame(x.genus.e,x.genus.t)
-
-# read metadata
-MyMeta<- read.table("../exponentUnifrac/data/nash_data/metadata.txt", header=T, sep="\t", row.names=1, comment.char="", check.names=FALSE)
-metadata <- MyMeta[grepl("a$",rownames(MyMeta)),]
-rownames(metadata) <- gsub("a$","",rownames(metadata))
-samples <- str_extract(rownames(metadata), "^[A-Z]*-[0-9]*")
-samples <- gsub("-","_",samples)
-unique.samples <- unique(samples)
-metadata <- metadata[match(unique.samples,samples),]
-rownames(metadata) <- unique.samples
-
-# conditions: Originally 0 meant steatohepatosis, and 1 meant NASH
-groups <- metadata$SSvsNASH[match(colnames(otu.tab.genus),rownames(metadata))]
-originalgroups <- groups
-
-# Make healthy represented by 0, SS by 1, NASH by 2
-groups <- groups + 1;
-groups[which(is.na(groups))] <- 0
-
-# make healthy 1, ss 2, nash 3 (healthy metagenomic will be 0 and nash metagenomic will be 4)
-groups <- groups + 1
-
-# mark healthy samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 1)] <- 0
-
-# mark nash samples selected for metagenomic study
-groups[which(colnames(otu.tab.genus) %in% metagenomic_samples & groups == 3)] <- 4
-
-groups[which(groups == 0)] <- "Healthy Metagenomic"
-groups[which(groups == 1)] <- "Healthy"
-groups[which(groups == 2)] <- "SS"
-groups[which(groups == 3)] <- "NASH"
-groups[which(groups == 4)] <- "NASH Metagenomic"
-
-groups <- as.factor(groups)
 
 # generate the dataset by making a data frame of
 otu.tab.genus.h <- colnames(otu.tab.genus)[grepl("^Healthy*",as.character(groups))] # Before samples
