@@ -109,10 +109,15 @@ groups <- as.factor(groups)
 sample.sum <- apply(d,2,sum)
 one.percent <- sample.sum*0.01
 
+otu.tab.genus.metagenomic <- otu.tab.genus[,metagenomic_samples]
+mg.sum <- apply(otu.tab.genus.metagenomic,1,sum)
+otu.tab.genus.metagenomic <- otu.tab.genus.metagenomic[which(mg.sum>0),]
+
 # adjust zeros
 d.adj.zero <- t(cmultRepl(t(d),method="CZM"))
 d.genus.adj.zero <- t(cmultRepl(t(d.genus),method="CZM"))
 otu.tab.genus.adj.zero <- t(cmultRepl(t(otu.tab.genus),method="CZM"))
+otu.tab.genus.metagenomic.adj.zero <- t(cmultRepl(t(otu.tab.genus.metagenomic),method="CZM"))
 
 filter <- apply(d,1,function(x) length(which(x > one.percent)))
 d.filter <- d.adj.zero[which(filter > 0),]
@@ -123,11 +128,13 @@ d.adj.zero <- d.adj.zero[order(apply(d.adj.zero,1,sum),decreasing=TRUE),]
 d.filter <- d.filter[order(apply(d.filter,1,sum),decreasing=TRUE),]
 d.genus.adj.zero <- d.genus.adj.zero[order(apply(d.genus.adj.zero,1,sum),decreasing=TRUE),]
 otu.tab.genus.adj.zero <- otu.tab.genus.adj.zero[order(apply(otu.tab.genus.adj.zero,1,sum),decreasing=TRUE),]
+otu.tab.genus.metagenomic.adj.zero <- otu.tab.genus.metagenomic.adj.zero[order(apply(otu.tab.genus.metagenomic.adj.zero,1,sum),decreasing=TRUE),]
 
 d.names <- rownames(d.adj.zero)
 d.filter.names <- rownames(d.filter)
 d.genus.names <- rownames(d.genus.adj.zero)
 otu.tab.genus.names <- rownames(otu.tab.genus.adj.zero)
+otu.tab.genus.metagenomic.names <- rownames(otu.tab.genus.metagenomic.adj.zero)
 
 taxa.col <- data.frame(as.character(rownames(d)),rownames(d))
 colnames(taxa.col) <- c("taxon","color")
@@ -153,18 +160,20 @@ d.prop <- apply(d.adj.zero,2,function(x){x/sum(x)})
 d.filter.prop <- apply(d.filter,2,function(x) {x/sum(x)})
 d.genus.prop <- apply(d.genus.adj.zero, 2,function(x) {x/sum(x)})
 otu.tab.genus.prop <- apply(otu.tab.genus.adj.zero, 2,function(x) {x/sum(x)})
-
+otu.tab.genus.metagenomic.prop <- apply(otu.tab.genus.metagenomic.adj.zero, 2,function(x) {x/sum(x)})
 
 d.clr <- t(apply(d.prop,2,function(x){log(x) - mean(log(x))}))
 d.filter.clr <- t(apply(d.filter.prop,2,function(x){log(x) - mean(log(x))}))
 d.genus.clr <- t(apply(d.genus.prop,2,function(x){log(x) - mean(log(x))}))
 otu.tab.genus.clr <- t(apply(otu.tab.genus.prop,2,function(x){log(x) - mean(log(x))}))
+otu.tab.genus.metagenomic.clr <- t(apply(otu.tab.genus.metagenomic.prop,2,function(x){log(x) - mean(log(x))}))
 
 
 d.pcx <- prcomp(d.clr)
 d.filter.pcx <- prcomp(d.filter.clr)
 d.genus.pcx <- prcomp(d.genus.clr)
 otu.tab.genus.pcx <- prcomp(otu.tab.genus.clr)
+otu.tab.genus.metagenomic.pcx <- prcomp(otu.tab.genus.metagenomic.clr)
 
 conds <- data.frame(c(rep("NASH",10),rep("Healthy",10)))
 colnames(conds) <- "cond"
@@ -200,13 +209,28 @@ xlabs.col=c(rep("red",10),rep("black",10)),
 expand=0.8,var.axes=FALSE, scale=0, main="Biplot")
 barplot(d.genus.pcx$sdev^2/mvar(d.genus.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
+mycolors <- as.character(groups)
+mycolors[which(mycolors == "Healthy Metagenomic")] <- "black"
+mycolors[which(mycolors == "Healthy")] <- "gray48"
+mycolors[which(mycolors == "SS")] <- "deeppink"
+mycolors[which(mycolors == "NASH")] <- "red"
+mycolors[which(mycolors == "NASH Metagenomic")] <- "darkred"
+
 coloredBiplot(otu.tab.genus.pcx, cex=c(0.6, 0.6),
 arrow.len=0.05,
 xlab=paste("PC1 ", round (sum(otu.tab.genus.pcx$sdev[1]^2)/mvar(otu.tab.genus.clr),3), sep=""),
 ylab=paste("PC2 ", round (sum(otu.tab.genus.pcx$sdev[2]^2)/mvar(otu.tab.genus.clr),3), sep=""),
-xlabs.col=c(rep("red",10),rep("black",10)),
+xlabs.col=mycolors,
 expand=0.8,var.axes=FALSE, scale=0, main="Biplot")
 barplot(otu.tab.genus.pcx$sdev^2/mvar(otu.tab.genus.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
+
+coloredBiplot(otu.tab.genus.metagenomic.pcx, cex=c(0.6, 0.6),
+arrow.len=0.05,
+xlab=paste("PC1 ", round (sum(otu.tab.genus.metagenomic.pcx$sdev[1]^2)/mvar(otu.tab.genus.metagenomic.clr),3), sep=""),
+ylab=paste("PC2 ", round (sum(otu.tab.genus.metagenomic.pcx$sdev[2]^2)/mvar(otu.tab.genus.metagenomic.clr),3), sep=""),
+xlabs.col=c(rep("red",10),rep("black",10)),
+expand=0.8,var.axes=FALSE, scale=0, main="Biplot")
+barplot(otu.tab.genus.metagenomic.pcx$sdev^2/mvar(otu.tab.genus.metagenomic.clr),  ylab="variance explained", xlab="Component", main="Scree plot") # scree plot
 
 dev.off()
 
